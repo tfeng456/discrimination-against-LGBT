@@ -5,26 +5,30 @@ date: "11/19/2020"
 output: html_document
 ---
 
+# Project is in collaboration with Derek Wang and Ryan Sheatz, but code is my own:
+
 ```{r}
 library(ggplot2)
 library(DT)
 library(kableExtra)
 library(summarytools)
 library(car)
-library(sjPlot)
-library(sjmisc)
-library(sjlabelled)
 library(jtools)
 library(interactions)
 library(emmeans)
 library(gtsummary)
 ```
 
+# Import data
 ```{r}
 lgbt <- read.csv("lgbt.csv", )
 lgbt$lgbtpolicyp <- as.numeric(lgbt$lgbtpolicyp)
 dim(lgbt)
 ```
+
+# Exploratory Data Analysis
+
+## EDA: Histograms (numerical variables)
 
 ```{r}
 # numerical outcome: lgbtdiscriminationp
@@ -60,6 +64,8 @@ ggplot(lgbt, aes(x=lgbtsupportp))+
   ggtitle("Histogram of lgbt$lgbtsupportp")
 ```
 
+## EDA: Scatterplot Matrix
+
 ```{r}
 # scatterplot of our numerical variables
 # plot(x = lgbt$lgbtsocacceptp, y = lgbt$lgbtdiscriminationp, main = "scatterplot of lgbt$lgbtsocacceptp and lgbt$lgbtdiscriminationp")
@@ -67,10 +73,14 @@ ggplot(lgbt, aes(x=lgbtsupportp))+
 pairs(cbind(lgbtdiscriminationp = lgbt$lgbtdiscriminationp, lgbtsocacceptp = lgbt$lgbtsocacceptp,
             lgbtfriendlyp = lgbt$lgbtfriendlyp, lgbtpolicyp = lgbt$lgbtpolicyp,
             lgbtsupportp = lgbt$lgbtsupportp))
+
 scatterplotMatrix( ~~ lgbtdiscriminationp + #categorical predictors
                    lgbtsocacceptp +  lgbtfriendlyp + lgbtpolicyp + lgbtsupportp, data =  lgbt)
 
 ```
+
+
+## EDA: Frequency Tables & Data Transformation
 
 ```{r}
 # Gender (2 levels, M/F)
@@ -102,6 +112,7 @@ freq(lgbt$sexualorientation, report.nas = FALSE, totals = FALSE,
      cumul = FALSE, headings = FALSE)
 ```
 
+## EDA: Correlation Matrix
 
 ```{r}
 # correlation and light EDA
@@ -114,6 +125,8 @@ kbl(round(cor(cbind(lgbtdiscriminationp = lgbt$lgbtdiscriminationp, lgbtsocaccep
 model_numerical <- lm(lgbt$lgbtdiscriminationp ~ lgbt$lgbtsocacceptp)
 summary(model_numerical)
 ```
+
+## EDA: Boxplots of numerical & categorical relationships
 
 ```{r}
 # boxplots (lgbtdiscriminationp)
@@ -151,18 +164,25 @@ print(ctable(x = lgbt$ethnicity, y = lgbt$sexualorientation, prop = "r", useNA =
       method = "render")
 ```
 
-# Running the Model
+# Building the Model
+
 ```{r}
+# Re-import data for convenience:
 lgbt <- read.csv("lgbt.csv")
+
+# Data transformation:
 lgbt$sexualorientation[which(lgbt$sexualorientation == "trans gender")] <- NA
 lgbt$lgbtpolicyp <- as.numeric(lgbt$lgbtpolicyp)
 
 lgbt_model <- lm(lgbtdiscriminationp ~ gender + sexualorientation * ethnicity + reveallgbtsocialnetwork + #categorical predictors
                    lgbtsocacceptp +  lgbtfriendlyp + lgbtpolicyp + lgbtsupportp, data =  lgbt) #numerical predictors
+
 summary(lgbt_model)
 tbl_regression(lgbt_model)
 str(lgbt)
 ```
+
+## Investigating Multicollinearity (VIF)
 
 ```{r}
 mmp(lgbt_model)
@@ -174,11 +194,11 @@ lgbt_model_noint <- lm(lgbtdiscriminationp ~ gender + sexualorientation + ethnic
 vif(lgbt_model_noint)
 ```
 
+# Interaction Plots
+
 ```{r}
-cat_plot(lgbt_model, pred = sexualorientation, modx = ethnicity, geom = "line")
 # emmip(lgbt_model, sexualorientation ~ ethnicity, CIs=TRUE)
 
-emmip(lgbt_model, ethnicity ~ sexualorientation, CIs=TRUE, ylab = "lgbtdiscriminationp")
 emmip(lgbt_model, ethnicity ~ sexualorientation, CIs=TRUE, ylab = "lgbtdiscriminationp")
 ```
 
