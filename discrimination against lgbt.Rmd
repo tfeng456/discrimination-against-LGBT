@@ -1,0 +1,184 @@
+---
+title: "Exploring Discrimination Against LGB* Individuals"
+author: "Tiffany Feng"
+date: "11/19/2020"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(DT)
+library(kableExtra)
+library(summarytools)
+library(car)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
+library(jtools)
+library(interactions)
+library(emmeans)
+library(gtsummary)
+```
+
+```{r}
+lgbt <- read.csv("lgbt.csv", )
+lgbt$lgbtpolicyp <- as.numeric(lgbt$lgbtpolicyp)
+dim(lgbt)
+```
+
+```{r}
+# numerical outcome: lgbtdiscriminationp
+# hist(lgbt$lgbtdiscriminationp)
+ggplot(lgbt, aes(x=lgbt$lgbtdiscriminationp))+
+  geom_histogram(breaks = seq(0,100,by = 10), color="darkblue", fill="lightblue", right = TRUE) +
+  ggtitle("Histogram of lgbt$lgbtdiscriminationp")
+```
+
+```{r}
+# numerical predictor: lgbtsocacceptp
+# hist(lgbt$lgbtsocacceptp)
+ggplot(lgbt, aes(x=lgbtsocacceptp))+
+  geom_histogram(breaks = seq(0,100,by = 10), color="darkblue", fill="lightblue", right = TRUE) +
+  ggtitle("Histogram of lgbt$lgbtsocacceptp")
+
+# numerical predictor: LGBTfriendlyp
+ggplot(lgbt, aes(x=lgbtfriendlyp))+
+  geom_histogram(breaks = seq(0,100,by = 10), color="darkblue", fill="lightblue", right = TRUE) +
+  ggtitle("Histogram of lgbt$lgbtfriendlyp")
+
+# numerical predictor: LGBTpolicyp
+# lgbt$lgbtpolicyp <- as.numeric(lgbt$lgbtpolicyp)
+
+ggplot(lgbt, aes(x=lgbtpolicyp))+
+  geom_histogram(breaks = seq(0,100,by = 10), color="darkblue", fill="lightblue", right = TRUE) +
+  ggtitle("Histogram of lgbt$lgbtpolicyp")
+
+
+# numerical predictor: LGBTsupportp
+ggplot(lgbt, aes(x=lgbtsupportp))+
+  geom_histogram(breaks = seq(0,100,by = 10), color="darkblue", fill="lightblue", right = TRUE) +
+  ggtitle("Histogram of lgbt$lgbtsupportp")
+```
+
+```{r}
+# scatterplot of our numerical variables
+# plot(x = lgbt$lgbtsocacceptp, y = lgbt$lgbtdiscriminationp, main = "scatterplot of lgbt$lgbtsocacceptp and lgbt$lgbtdiscriminationp")
+
+pairs(cbind(lgbtdiscriminationp = lgbt$lgbtdiscriminationp, lgbtsocacceptp = lgbt$lgbtsocacceptp,
+            lgbtfriendlyp = lgbt$lgbtfriendlyp, lgbtpolicyp = lgbt$lgbtpolicyp,
+            lgbtsupportp = lgbt$lgbtsupportp))
+scatterplotMatrix( ~~ lgbtdiscriminationp + #categorical predictors
+                   lgbtsocacceptp +  lgbtfriendlyp + lgbtpolicyp + lgbtsupportp, data =  lgbt)
+
+```
+
+```{r}
+# Gender (2 levels, M/F)
+# Sexualorientation (4 levels, Gay/Lesbian/Bisexual/Transgender)
+# Ethnicity (4 levels, White/Black/Hispanic/Other)
+# (maybe? Probably not since we have 3 already) revealLGBTsocialnetwork
+
+table(lgbt$gender)
+table(lgbt$sexualorientation)
+table(lgbt$ethnicity)
+table(lgbt$reveallgbtsocialnetwork)
+
+freq(lgbt$gender, report.nas = FALSE, totals = FALSE, 
+     cumul = FALSE, headings = FALSE)
+freq(lgbt$sexualorientation, report.nas = FALSE, totals = FALSE, 
+     cumul = FALSE, headings = FALSE)
+freq(lgbt$ethnicity, report.nas = FALSE, totals = FALSE, 
+     cumul = FALSE, headings = FALSE)
+freq(lgbt$reveallgbtsocialnetwork, report.nas = FALSE, totals = FALSE, 
+     cumul = FALSE, headings = FALSE)
+
+```
+
+```{r}
+# transform data: change "trans gender to NA"
+lgbt$sexualorientation[which(lgbt$sexualorientation == "trans gender")] <- NA
+
+freq(lgbt$sexualorientation, report.nas = FALSE, totals = FALSE, 
+     cumul = FALSE, headings = FALSE)
+```
+
+
+```{r}
+# correlation and light EDA
+# cor(lgbt$lgbtsocacceptp, lgbt$lgbtdiscriminationp, use = "complete.obs")
+kbl(round(cor(cbind(lgbtdiscriminationp = lgbt$lgbtdiscriminationp, lgbtsocacceptp = lgbt$lgbtsocacceptp,
+            lgbtfriendlyp = lgbt$lgbtfriendlyp, lgbtpolicyp = lgbt$lgbtpolicyp,
+            lgbtsupportp = lgbt$lgbtsupportp), use = "complete.obs"), 4)) %>% 
+  kable_styling(bootstrap_options = "striped", full_width = F, position = "left")
+
+model_numerical <- lm(lgbt$lgbtdiscriminationp ~ lgbt$lgbtsocacceptp)
+summary(model_numerical)
+```
+
+```{r}
+# boxplots (lgbtdiscriminationp)
+
+par(mfrow=c(2,2))
+
+boxplot(lgbtdiscriminationp~gender, data=lgbt)
+
+boxplot(lgbtdiscriminationp~sexualorientation, data=lgbt)
+
+boxplot(lgbtdiscriminationp~ethnicity, data=lgbt)
+
+boxplot(lgbtdiscriminationp~reveallgbtsocialnetwork, data=lgbt)
+
+# # boxplots (LGBTfriendlyp)
+# boxplot(lgbtfriendlyp~gender, data=lgbt)
+# 
+# boxplot(lgbtfriendlyp~sexualorientation, data=lgbt)
+# 
+# boxplot(lgbtfriendlyp~ethnicity, data=lgbt)
+# 
+# boxplot(lgbtfriendlyp~reveallgbtsocialnetwork, data=lgbt)
+
+
+```
+
+```{r}
+# library(phia)
+# 
+# interaction.plot(lgbt$reveallgbtsocialnetwork, lgbt$gender, lgbt$lgbtdiscriminationp)
+```
+
+```{r}
+print(ctable(x = lgbt$ethnicity, y = lgbt$sexualorientation, prop = "r", useNA = "no"),
+      method = "render")
+```
+
+# Running the Model
+```{r}
+lgbt <- read.csv("lgbt.csv")
+lgbt$sexualorientation[which(lgbt$sexualorientation == "trans gender")] <- NA
+lgbt$lgbtpolicyp <- as.numeric(lgbt$lgbtpolicyp)
+
+lgbt_model <- lm(lgbtdiscriminationp ~ gender + sexualorientation * ethnicity + reveallgbtsocialnetwork + #categorical predictors
+                   lgbtsocacceptp +  lgbtfriendlyp + lgbtpolicyp + lgbtsupportp, data =  lgbt) #numerical predictors
+summary(lgbt_model)
+tbl_regression(lgbt_model)
+str(lgbt)
+```
+
+```{r}
+mmp(lgbt_model)
+vif(lgbt_model)
+
+lgbt_model_noint <- lm(lgbtdiscriminationp ~ gender + sexualorientation + ethnicity + reveallgbtsocialnetwork + #categorical predictors
+                   lgbtsocacceptp +  lgbtfriendlyp + lgbtpolicyp + lgbtsupportp, data =  lgbt) #numerical predictors
+# summary(lgbt_model_noint)
+vif(lgbt_model_noint)
+```
+
+```{r}
+cat_plot(lgbt_model, pred = sexualorientation, modx = ethnicity, geom = "line")
+# emmip(lgbt_model, sexualorientation ~ ethnicity, CIs=TRUE)
+
+emmip(lgbt_model, ethnicity ~ sexualorientation, CIs=TRUE, ylab = "lgbtdiscriminationp")
+emmip(lgbt_model, ethnicity ~ sexualorientation, CIs=TRUE, ylab = "lgbtdiscriminationp")
+```
+
