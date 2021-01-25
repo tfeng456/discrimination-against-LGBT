@@ -4,8 +4,7 @@ author: "Tiffany Feng"
 date: "11/19/2020"
 output: html_document
 ---
-
-# Project is in collaboration with Derek Wang and Ryan Sheatz, but code is my own:
+Project is in collaboration with Derek Wang and Ryan Sheatz, but code is my own:
 
 ```{r}
 library(ggplot2)
